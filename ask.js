@@ -1,19 +1,20 @@
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'API key not configured on server' });
+  if (!apiKey) return res.status(500).json({ error: 'API key not configured on server. Please add ANTHROPIC_API_KEY in Vercel environment variables.' });
 
-  const { question } = req.body;
+  const { question } = req.body || {};
   if (!question || typeof question !== 'string' || question.trim().length === 0) {
-    return res.status(400).json({ error: 'Please provide a question' });
+    return res.status(400).json({ error: 'Please provide a question.' });
   }
   if (question.length > 1000) {
-    return res.status(400).json({ error: 'Question too long — please keep it under 1000 characters' });
+    return res.status(400).json({ error: 'Question too long — please keep it under 1000 characters.' });
   }
 
   const systemPrompt = `You are a plain-language South African tax assistant for the ebTax website. Your knowledge comes from the PPS Fiduciary Services Tax Guide 2026/2027 (published 25 February 2026).
@@ -39,7 +40,7 @@ Key facts from the guide:
 - Carbon tax: R308 per tCO2e from 1 January 2026
 - Dividends tax: 20%
 - Provisional tax threshold: R1.8 million from 1 March 2026
-- Transfer duty: nil up to R1 210 000; sliding scale above that`;
+- Transfer duty: nil up to R1 210 000; sliding scale above`;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -64,4 +65,4 @@ Key facts from the guide:
   } catch (err) {
     return res.status(500).json({ error: 'Failed to reach Anthropic API. Please try again.' });
   }
-}
+};
